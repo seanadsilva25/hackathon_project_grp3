@@ -50,3 +50,88 @@ def create_complaint():
         return jsonify(response.data[0] if response.data else {})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@main.route("/kanban/tasks", methods=["GET"])
+def get_kanban_tasks():
+    if not supabase:
+        return jsonify({"error": "Supabase not configured"}), 500
+    try:
+        response = supabase.table("heatmap_zones").select("*").execute()
+        return jsonify(response.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route("/kanban/tasks/<zone_id>/status", methods=["PUT"])
+def update_task_status(zone_id):
+    if not supabase:
+        return jsonify({"error": "Supabase not configured"}), 500
+    try:
+        data = request.json
+        status = data.get("status")
+        response = supabase.table("heatmap_zones").update({"status": status}).eq("id", zone_id).execute()
+        return jsonify(response.data[0] if response.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route("/kanban/tasks/<zone_id>/resolve", methods=["POST"])
+def resolve_task(zone_id):
+    if not supabase:
+        return jsonify({"error": "Supabase not configured"}), 500
+    try:
+        data = request.json
+        image_url = data.get("authority_image_url")
+        response = supabase.table("heatmap_zones").update({
+            "status": "in-review",
+            "authority_image_url": image_url
+        }).eq("id", zone_id).execute()
+        return jsonify(response.data[0] if response.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route("/kanban/tasks/<zone_id>/verify", methods=["POST"])
+def verify_task(zone_id):
+    if not supabase:
+        return jsonify({"error": "Supabase not configured"}), 500
+    try:
+        data = request.json
+        image_url = data.get("image_url")
+        
+        # Insert verification
+        supabase.table("complaint_verifications").insert({
+            "zone_id": zone_id,
+            "image_url": image_url,
+            "is_verified": True
+        }).execute()
+        
+        # Update zone status to done
+        response = supabase.table("heatmap_zones").update({
+            "status": "done"
+        }).eq("id", zone_id).execute()
+        
+        return jsonify(response.data[0] if response.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@main.route("/kanban/tasks/<zone_id>/reject", methods=["POST"])
+def reject_task(zone_id):
+    if not supabase:
+        return jsonify({"error": "Supabase not configured"}), 500
+    try:
+        data = request.json
+        image_url = data.get("image_url")
+        
+        # Insert verification
+        supabase.table("complaint_verifications").insert({
+            "zone_id": zone_id,
+            "image_url": image_url,
+            "is_verified": False
+        }).execute()
+        
+        # Update zone status back to in-progress
+        response = supabase.table("heatmap_zones").update({
+            "status": "in-progress"
+        }).eq("id", zone_id).execute()
+        
+        return jsonify(response.data[0] if response.data else {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

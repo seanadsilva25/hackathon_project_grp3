@@ -1,24 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ResolutionModal from './ResolutionModal';
 
 // --- Configuration & Data ---
 const COLUMNS = [
   { id: 'planned', title: 'Planned', dot: '#6B7280', bg: '#F3F4F6', border: '#E5E7EB' },
   { id: 'in-progress', title: 'In Progress', dot: '#F59E0B', bg: '#FDF8F0', border: '#F3E8D6' },
   { id: 'in-review', title: 'In Review', dot: '#3B82F6', bg: '#EFF6FF', border: '#DBEAFE' },
-  { id: 'done', title: 'Done', dot: '#10B981', bg: '#F0FDF4', border: '#D1FAE5' },
-];
-
-const INITIAL_TASKS = [
-  { id: 't1', title: 'Assistant Information Manager', date: 'Jan 7 - Jan 31, 2023', column: 'planned' },
-  { id: 't2', title: 'IT Director', date: 'May 6 - Jun 30, 2023', column: 'planned' },
-  { id: 't3', title: 'Assistant Director', date: 'May 24 - Jul 19, 2023', column: 'planned' },
-  { id: 't4', title: 'Executive Operations President', date: 'Aug 29 - Sep 21, 2023', column: 'in-progress' },
-  { id: 't5', title: 'Associate Marketing Director', date: 'Jul 22 - Sep 16, 2023', column: 'in-progress' },
-  { id: 't6', title: 'Associate Consultant', date: 'May 21 - Jun 20, 2023', column: 'in-progress' },
-  { id: 't7', title: 'Sales Secretary', date: 'Dec 18 - Jan 4, 2024', column: 'in-review' },
-  { id: 't8', title: 'IT Consultant', date: 'Apr 7 - Apr 9, 2023', column: 'in-review' },
-  { id: 't9', title: 'General President', date: 'Aug 25 - Oct 9, 2023', column: 'done' },
-  { id: 't10', title: 'General Consultant', date: 'Feb 22 - Apr 6, 2023', column: 'done' },
+  { id: 'done', title: 'Done', dot: '#10B98V', bg: '#F0FDF4', border: '#D1FAE5' },
 ];
 
 // --- Subcomponents ---
@@ -33,14 +21,27 @@ const Card = ({ task, isDragging, onPointerDown }) => (
       </h4>
       <div className="w-[18px] h-[18px] md:w-[24px] md:h-[24px] rounded-full bg-gray-200 shrink-0"></div>
     </div>
-    <p className="text-[9px] md:text-[12px] font-medium text-gray-400">
-      {task.date}
-    </p>
+    <div className="flex justify-between items-center mt-2">
+      <p className="text-[9px] md:text-[12px] font-medium text-gray-400">
+        {task.date}
+      </p>
+      {task.column === 'in-review' && (
+        <a 
+          href={`/verify/${task.id}`} 
+          target="_blank" 
+          rel="noreferrer"
+          className="text-[10px] md:text-[11px] font-bold bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          Verify
+        </a>
+      )}
+    </div>
   </div>
 );
 
 export default function KanbanBoard() {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [tasks, setTasks] = useState([]);
   
   // Drag & Drop State
   const [draggingTask, setDraggingTask] = useState(null);
@@ -48,6 +49,7 @@ export default function KanbanBoard() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [cloneStyle, setCloneStyle] = useState({ width: 0, height: 0 });
   const [hoveredCol, setHoveredCol] = useState(null);
+  const [resolutionModalTask, setResolutionModalTask] = useState(null);
 
   // Refs for event listeners
   const draggingTaskRef = useRef(null);
@@ -57,6 +59,43 @@ export default function KanbanBoard() {
 
   useEffect(() => { draggingTaskRef.current = draggingTask; }, [draggingTask]);
   useEffect(() => { hoveredColRef.current = hoveredCol; }, [hoveredCol]);
+
+  // Fetch tasks from backend
+  const fetchTasks = async () => {
+    try {
+      const res = await fetch('/api/kanban/tasks');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const formattedTasks = data.map(zone => ({
+          id: zone.id,
+          title: zone.zone_type || 'Unknown Zone',
+          date: new Date(zone.created_at || Date.now()).toLocaleDateString(),
+          column: zone.status || 'planned',
+          original: zone
+        }));
+        setTasks(formattedTasks);
+      }
+    } catch (err) {
+      console.error("Failed to fetch kanban tasks:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const updateTaskStatus = async (taskId, newColumn) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, column: newColumn } : t));
+    try {
+      await fetch(`/api/kanban/tasks/${taskId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newColumn })
+      });
+    } catch (err) {
+      console.error("Failed to update task status", err);
+    }
+  };
 
   useEffect(() => {
     const handleMove = (e) => {
@@ -87,12 +126,15 @@ export default function KanbanBoard() {
         longPressTimer.current = null;
       }
       if (draggingTaskRef.current) {
-        if (hoveredColRef.current && hoveredColRef.current !== draggingTaskRef.current.column) {
-          setTasks(prev => prev.map(t => 
-            t.id === draggingTaskRef.current.id 
-              ? { ...t, column: hoveredColRef.current } 
-              : t
-          ));
+        const targetCol = hoveredColRef.current;
+        const currentTask = draggingTaskRef.current;
+        
+        if (targetCol && targetCol !== currentTask.column) {
+          if (targetCol === 'in-review') {
+            setResolutionModalTask(currentTask);
+          } else {
+            updateTaskStatus(currentTask.id, targetCol);
+          }
         }
         setDraggingTask(null);
         setHoveredCol(null);
@@ -113,13 +155,13 @@ export default function KanbanBoard() {
     return () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
-      window.removeEventListener('pointercancel', handleUp);
+      window.removeEventListener('pointerrcancel', handleUp);
       window.removeEventListener('touchmove', handleTouchMove);
     };
   }, []);
 
   const handlePointerDown = (e, task) => {
-    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    if (e.button !== 0 && e.pointerType !== 'mouse') return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetX = e.clientX - rect.left;
@@ -157,14 +199,17 @@ export default function KanbanBoard() {
       `}} />
 
       {/* Header matching the phone screenshot */}
-      <div className="flex items-center justify-center p-4 bg-[#F9FAFB] relative md:mb-4 max-w-7xl mx-auto w-full">
-        <a href="/" className="absolute left-4 p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center gap-1 text-sm font-medium text-gray-700">
+      <div className="flex items-center justify-between p-4 bg-[#F9FAFB] relative md:mb-4 max-w-7xl mx-auto w-full">
+        <a href="/" className="p-2 hover:bg-gray-200 rounded-full transition-colors flex items-center gap-1 text-sm font-medium text-gray-700">
           <svg className="w-5 h-5 text-gray-900" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           <span className="hidden sm:inline">Home</span>
         </a>
-        <h1 className="text-[18px] md:text-[24px] font-bold text-gray-900">Kanban Board</h1>
+        <h1 className="text-[18px] md:text-[24px] font-bold text-gray-900 absolute left-1/2 -translate-x-1/2">Kanban Board</h1>
+        <a href="/verify" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold transition-colors">
+          Verify Page
+        </a>
       </div>
       
       {/* Grid Layout: 2x2 on Mobile, 4x1 Flex on Desktop */}
@@ -199,7 +244,7 @@ export default function KanbanBoard() {
               >
                 {columnTasks.map(task => (
                   <Card 
-                    key={task.id} 
+                    tey={task.id} 
                     task={task} 
                     isDragging={draggingTask?.id === task.id} 
                     onPointerDown={(e) => handlePointerDown(e, task)}
@@ -239,6 +284,22 @@ export default function KanbanBoard() {
             <p className="text-[9px] md:text-[12px] font-medium text-gray-400">{draggingTask.date}</p>
           </div>
         </div>
+      )}
+
+      {/* Resolution Modal */}
+      {resolutionModalTask && (
+        <ResolutionModal
+          task={resolutionModalTask}
+          onClose={() => setResolutionModalTask(null)}
+          onSuccess={() => {
+            setTasks(prev => prev.map(t => 
+              t.id === resolutionModalTask.id 
+                ? { ...t, column: 'in-review' } 
+                : t
+            ));
+            setResolutionModalTask(null);
+          }}
+        />
       )}
     </div>
   );

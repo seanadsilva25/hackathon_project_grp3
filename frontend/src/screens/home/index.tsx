@@ -38,6 +38,7 @@ const DEFAULT_NAV: NavLink[] = [
     { label: "Home", href: "/", active: true },
     { label: "Kanban", href: "/kanban" },
     { label: "Map", href: "/map" },
+    { label: "Verification", href: "/verify" },
     { label: "Pricing", href: "#" },
     { label: "About", href: "#" },
     { label: "FAQs", href: "#" },

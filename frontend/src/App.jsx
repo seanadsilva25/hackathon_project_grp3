@@ -4,6 +4,8 @@ import Auth9Demo from "./screens/signup-login/demo";
 import Hero2Demo from "./screens/home/demo";
 import KanbanBoard from "./screens/kanban-board/KanbanBoard";
 import InteractiveMap from "./screens/interactive-map/InteractiveMap";
+import ResolutionVerification from "./screens/verification/ResolutionVerification";
+import VerificationHub from "./screens/verification/VerificationHub";
 
 function Home() {
   const [backendStatus, setBackendStatus] = useState("Checking...");
@@ -106,6 +108,8 @@ export default function App() {
         <Route path="/signup" element={<Auth9Demo />} />
         <Route path="/kanban" element={<KanbanBoard />} />
         <Route path="/map" element={<InteractiveMap />} />
+        <Route path="/verify" element={<VerificationHub />} />
+        <Route path="/verify/:id" element={<ResolutionVerification />} />
       </Routes>
     </BrowserRouter>
   );
