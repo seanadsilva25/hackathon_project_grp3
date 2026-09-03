@@ -7,6 +7,7 @@ from app.services.email_service import (
     send_threshold_citizen_email,
     send_threshold_authority_email
 )
+from app.services.authority_assignment_service import assign_complaint_authority
 
 complaints_api = Blueprint("complaints_api", __name__)
 
@@ -116,4 +117,21 @@ def upvote_complaint(complaint_id):
         return jsonify({"success": True, "upvote_count": new_count})
         
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@complaints_api.route("/<complaint_id>/assign", methods=["POST"])
+def assign_authority(complaint_id):
+    try:
+        # Fetch the complaint
+        complaint = _fetch_one("complaints", "id", complaint_id)
+        if not complaint:
+            return jsonify({"error": "Complaint not found"}), 404
+            
+        # Execute assignment logic
+        result = assign_complaint_authority(complaint)
+        
+        return jsonify(result), 200 if result.get("assigned") else 400
+        
+    except Exception as e:
+        print(f"Assignment error: {e}")
         return jsonify({"error": str(e)}), 500

@@ -17,7 +17,7 @@ export default function PoliceDashboard({ complaints, onRowClick, notifications 
   const escalationsCount = complaints.filter(c => c.upvote_count >= 10).length;
 
   const kpis = [
-    { label: 'Total Incidents', value: total, color: 'midnight', trend: 'up', description: '+3 from yesterday' },
+    { label: 'Assigned Incidents', value: total, color: 'midnight', trend: 'up', description: '+3 from yesterday' },
     { label: 'Pending Response', value: pending, color: 'amber', trend: 'down', description: '-12% this week' },
     { label: 'Critical / Escalated', value: critical + escalationsCount, color: 'crimson', trend: 'up', description: 'Requires attention' },
     { label: 'Avg Response Time', value: '14m', color: 'teal', trend: 'down', description: 'Faster than target' },
@@ -29,7 +29,7 @@ export default function PoliceDashboard({ complaints, onRowClick, notifications 
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight text-unisafe-midnight-blue">Police Command Center</h2>
-        <p className="text-sm text-unisafe-dark-midnight-blue/70">Monitor law enforcement incidents and coordinate emergency responses.</p>
+        <p className="text-sm text-unisafe-dark-midnight-blue/70">Monitor law enforcement incidents assigned directly to you.</p>
       </div>
       
       <AuthorityKpiCards stats={kpis} />
@@ -78,8 +78,8 @@ export default function PoliceDashboard({ complaints, onRowClick, notifications 
 
       <div className="mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold tracking-tight text-unisafe-midnight-blue">Recent Complaints</h3>
-          <p className="text-sm text-unisafe-dark-midnight-blue/60">Complete incident log</p>
+          <h3 className="text-xl font-bold tracking-tight text-unisafe-midnight-blue">My Assigned Complaints</h3>
+          <p className="text-sm text-unisafe-dark-midnight-blue/60">Complete assigned incident log</p>
         </div>
         <AuthorityComplaintTable complaints={complaints} onRowClick={onRowClick} />
       </div>

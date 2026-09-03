@@ -68,8 +68,8 @@ export default function AuthorityDashboard() {
     if (matchedComplaint) {
       setSelectedComplaint(matchedComplaint);
     } else {
-      console.log("Could not link notification to complaint, open complaints tab instead.");
-      setActiveTab('complaints');
+      console.log("Could not link notification to complaint, open assignments tab instead.");
+      setActiveTab('assignments');
     }
   };
 
@@ -125,16 +125,6 @@ export default function AuthorityDashboard() {
               // Generic Fallback
               <PoliceDashboard complaints={complaints} onRowClick={setSelectedComplaint} notifications={notifications} onNotificationClick={handleNotificationClick} />
             )
-          )}
-
-          {activeTab === 'complaints' && (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold tracking-tight text-unisafe-midnight-blue">Complaint Management</h2>
-                <p className="text-sm text-unisafe-dark-midnight-blue/70">View and manage all complaints within your jurisdiction.</p>
-              </div>
-              <PoliceDashboard complaints={complaints} onRowClick={setSelectedComplaint} />
-            </div>
           )}
 
           {activeTab === 'assignments' && (

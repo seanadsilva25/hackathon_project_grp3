@@ -17,7 +17,7 @@ export default function BMCDashboard({ complaints, onRowClick, notifications = [
   const escalationsCount = complaints.filter(c => c.upvote_count >= 10).length;
 
   const kpis = [
-    { label: 'Total Civic Issues', value: total, color: 'midnight', trend: 'up', description: '+8 this week' },
+    { label: 'Assigned Issues', value: total, color: 'midnight', trend: 'up', description: '+5 from yesterday' },
     { label: 'Pending Assessment', value: pending, color: 'amber', trend: 'up', description: 'Requires routing' },
     { label: 'Priority / Escalated', value: priority + escalationsCount, color: 'crimson', trend: 'down', description: 'Infrastructure risks' },
     { label: 'Resolution Rate', value: '82%', color: 'teal', trend: 'up', description: 'Above 75% SLA target' },
@@ -29,7 +29,7 @@ export default function BMCDashboard({ complaints, onRowClick, notifications = [
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1400px] mx-auto">
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight text-unisafe-midnight-blue">Civic Operations Center</h2>
-        <p className="text-sm text-unisafe-dark-midnight-blue/70">Monitor municipal complaints and track infrastructure repair progress.</p>
+        <p className="text-sm text-unisafe-dark-midnight-blue/70">Monitor civic infrastructure and services assigned directly to you.</p>
       </div>
       
       <AuthorityKpiCards stats={kpis} />
@@ -78,8 +78,8 @@ export default function BMCDashboard({ complaints, onRowClick, notifications = [
 
       <div className="mb-8">
         <div className="mb-4">
-          <h3 className="text-xl font-bold tracking-tight text-unisafe-midnight-blue">All Civic Operations</h3>
-          <p className="text-sm text-unisafe-dark-midnight-blue/60">Complete operational log</p>
+          <h3 className="text-xl font-bold tracking-tight text-unisafe-midnight-blue">My Assigned Complaints</h3>
+          <p className="text-sm text-unisafe-dark-midnight-blue/60">Complete assigned civic issue log</p>
         </div>
         <AuthorityComplaintTable complaints={complaints} onRowClick={onRowClick} />
       </div>
