@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --color-unisafe-smoke-white: #F7F8F4;
+  --color-unisafe-white: #FFFFFF;
+  --color-unisafe-midnight-blue: #1E3A5F;
+  --color-unisafe-teal: #10B981;
+  --color-unisafe-crimson: #DC2626;
+  --color-unisafe-amber: #D97706;
+  --color-unisafe-dark-midnight-blue: #152937;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -9,4 +19,5 @@
 body {
   font-family: Arial, sans-serif;
   min-width: 320px;
+  background-color: var(--color-unisafe-smoke-white);
 }
