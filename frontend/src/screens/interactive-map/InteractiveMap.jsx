@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { supabase } from '../../services/supabase';
+import { useNavigate } from 'react-router-dom';
 
 // --- Configuration & Constants ---
 const CATEGORIES_CONFIG = {
@@ -28,7 +30,14 @@ const CATEGORIES_CONFIG = {
 };
 
 const getTeardropHTML = (category, isDragging = false) => {
-  const config = CATEGORIES_CONFIG[category];
+  let parentCategory = category;
+  for (const [parent, data] of Object.entries(CATEGORIES_CONFIG)) {
+    if (data.subcategories.includes(category)) {
+      parentCategory = parent;
+      break;
+    }
+  }
+  const config = CATEGORIES_CONFIG[parentCategory] || CATEGORIES_CONFIG['Infrastructure'];
   return `
     <div style="width:56px; height:56px; position:relative; display:flex; justify-content:center;" class="${isDragging ? '' : 'animate-[dropBounce_0.5s_cubic-bezier(0.34,1.56,0.64,1)_forwards]'}">
        <div style="
@@ -106,6 +115,7 @@ const MapController = ({ step, pinLocation, setPinLocation, setMapInstance, drag
 };
 
 const InteractiveMap = () => {
+  const navigate = useNavigate();
   const defaultCenter = [19.107, 72.837]; 
   const [mapInstance, setMapInstance] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -128,6 +138,19 @@ const InteractiveMap = () => {
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState(null);
   const [reports, setReports] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/complaints')
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) {
+          const formatted = data.map(d => ({ ...d, location: { lat: d.latitude, lng: d.longitude } }));
+          setReports(formatted);
+        }
+      })
+      .catch(err => console.error('Error fetching complaints:', err));
+  }, []);
 
   useEffect(() => {
     const handleMove = (e) => {
@@ -193,9 +216,46 @@ const InteractiveMap = () => {
     setSubCategory(''); setDescription(''); setPhoto(null);
   };
 
-  const submitReport = () => {
-    setReports([...reports, { category: activeCategory, subCategory, description, photo, location: pinLocation }]);
-    cancelReport();
+  const submitReport = async () => {
+    setIsSubmitting(true);
+    let imageUrl = null;
+    if (photo) {
+      const fileName = `${Date.now()}-${photo.name || 'photo.jpg'}`;
+      const { data, error } = await supabase.storage.from('complaint_images').upload(fileName, photo);
+      if (error) {
+        console.error('Image upload failed:', error);
+      } else {
+        const { data: publicUrlData } = supabase.storage.from('complaint_images').getPublicUrl(fileName);
+        imageUrl = publicUrlData.publicUrl;
+      }
+    }
+
+    const payload = {
+      latitude: pinLocation.lat,
+      longitude: pinLocation.lng,
+      category: subCategory,
+      description: description,
+      image_url: imageUrl
+    };
+
+    try {
+      const res = await fetch('/api/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit report');
+      }
+      setReports([...reports, { ...data, category: data.category || activeCategory, location: { lat: data.latitude, lng: data.longitude } }]);
+      cancelReport();
+    } catch(err) {
+      console.error(err);
+      alert('Failed to submit report');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleLocate = () => {
@@ -278,7 +338,7 @@ const InteractiveMap = () => {
 
       {/* TOP BAR */}
       <div className="absolute top-[12px] left-[16px] right-[16px] z-[1000] flex gap-3 pointer-events-auto">
-        <button className="w-[54px] h-[54px] shrink-0 bg-white/90 backdrop-blur-xl rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.12)] border border-white/80 flex items-center justify-center focus:outline-none hover:bg-white active:scale-95 transition-all">
+        <button onClick={() => navigate(-1)} className="w-[54px] h-[54px] shrink-0 bg-white/90 backdrop-blur-xl rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.12)] border border-white/80 flex items-center justify-center focus:outline-none hover:bg-white active:scale-95 transition-all">
           <svg className="w-[24px] h-[24px] text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         </button>
         
@@ -479,13 +539,13 @@ const InteractiveMap = () => {
               </button>
               <button 
                 onClick={submitReport}
-                disabled={!subCategory}
+                disabled={!subCategory || isSubmitting}
                 className={
                   "flex-1 py-[18px] font-extrabold rounded-[20px] transition-all " +
                   (subCategory ? "bg-[#00C853] text-white shadow-[0_8px_20px_rgba(0,200,83,0.25)] hover:bg-[#00B34A] active:scale-95" : "bg-slate-100 text-slate-400")
                 }
               >
-                Submit Report
+                {isSubmitting ? "Submitting..." : "Submit Report"}
               </button>
             </div>
 

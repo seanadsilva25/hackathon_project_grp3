@@ -19,4 +19,12 @@ export default defineConfig({
       "motion/react": path.resolve(__dirname, "./src/lib/motion-shim.jsx"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:5000',
+        changeOrigin: true
+      }
+    }
+  }
 })

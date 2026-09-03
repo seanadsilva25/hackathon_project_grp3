@@ -189,11 +189,6 @@ export default function KanbanBoard() {
                   <div className="bg-white px-1.5 md:px-2 py-0.5 rounded-[6px] text-[10px] md:text-[13px] font-bold shadow-sm border border-gray-100/50 flex items-center justify-center min-w-[20px]" style={{ color: col.dot }}>
                     {columnTasks.length}
                   </div>
-                  <button className="w-5 h-5 md:w-7 md:h-7 bg-white rounded-[6px] shadow-sm border border-gray-100/50 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all" style={{ color: col.dot }}>
-                    <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                  </button>
                 </div>
               </div>
               
