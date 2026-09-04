@@ -1,13 +1,37 @@
+import { useState, useEffect } from "react";
 import { Hero2 } from "./index";
+import { supabase } from "../../services/supabase";
 
 import CitizenNotificationBell from "../../components/citizen/CitizenNotificationBell";
 
 export default function Hero2Demo() {
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const roleType = session?.user?.user_metadata?.role_type;
+  const isAuthority = roleType === 'authority';
+
   const customNavLinks = [
     { label: "Home", href: "/", active: true },
-    { label: "Kanban", href: "/kanban" },
     { label: "Map", href: "/map" },
-    { 
+  ];
+
+  if (isAuthority) {
+    customNavLinks.push({ label: "Kanban", href: "/kanban", active: false } as any);
+    customNavLinks.push({ 
       label: "Authority Dashboard", 
       href: "/authority",
       hasDropdown: true,
@@ -15,8 +39,8 @@ export default function Hero2Demo() {
         { label: "Police Dashboard", href: "/authority?dept=police" },
         { label: "BMC Dashboard", href: "/authority?dept=bmc" }
       ]
-    },
-  ];
+    } as any);
+  }
   
   const customSocialLinks = [
     { label: "Twitter", href: "#" },
@@ -44,32 +68,49 @@ export default function Hero2Demo() {
         description={"A unified civic operations platform bridging the gap between citizens and authorities for a safer, cleaner city."}
         primaryCtaLabel="Report an Issue"
         primaryCtaHref="/map"
-        secondaryCtaLabel="View Kanban Board"
-        secondaryCtaHref="/kanban"
+        secondaryCtaLabel={isAuthority ? "View Kanban Board" : "Explore Map"}
+        secondaryCtaHref={isAuthority ? "/kanban" : "/map"}
         socialLinks={customSocialLinks}
         headerActions={
           <div className="flex items-center gap-4">
-            <CitizenNotificationBell />
-            <div className="flex items-center gap-2 border-r border-gray-300 pr-4">
-              <span className="text-xs font-semibold uppercase tracking-wider text-unisafe-midnight-blue/50">Citizen</span>
-              <a href="/auth?role=citizen&mode=login" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
-                Login
-              </a>
-              <span className="text-unisafe-midnight-blue/30">/</span>
-              <a href="/auth?role=citizen&mode=register" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
-                Register
-              </a>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-unisafe-midnight-blue/50">Authority</span>
-              <a href="/auth?role=authority&mode=login" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
-                Login
-              </a>
-              <span className="text-unisafe-midnight-blue/30">/</span>
-              <a href="/auth?role=authority&mode=register" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
-                Register
-              </a>
-            </div>
+            {session && <CitizenNotificationBell />}
+            
+            {session ? (
+              <div className="flex items-center gap-3 border-l border-gray-300 pl-4">
+                <span className="text-sm font-semibold text-unisafe-midnight-blue bg-unisafe-teal/10 px-3 py-1 rounded-full">
+                  {roleType === 'authority' ? 'Authority' : 'Citizen'}
+                </span>
+                <button 
+                  onClick={() => supabase.auth.signOut()} 
+                  className="text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 border-r border-gray-300 pr-4">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-unisafe-midnight-blue/50">Citizen</span>
+                  <a href="/auth?role=citizen&mode=login" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
+                    Login
+                  </a>
+                  <span className="text-unisafe-midnight-blue/30">/</span>
+                  <a href="/auth?role=citizen&mode=register" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
+                    Register
+                  </a>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-unisafe-midnight-blue/50">Authority</span>
+                  <a href="/auth?role=authority&mode=login" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
+                    Login
+                  </a>
+                  <span className="text-unisafe-midnight-blue/30">/</span>
+                  <a href="/auth?role=authority&mode=register" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
+                    Register
+                  </a>
+                </div>
+              </>
+            )}
           </div>
         }
       />
