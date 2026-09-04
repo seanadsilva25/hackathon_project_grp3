@@ -34,6 +34,47 @@ def _update(table, id_val, payload):
         print(f"Error updating {table}: {e}")
     return None
 
+@complaints_api.route("", methods=["POST"])
+@complaints_api.route("/", methods=["POST"])
+def create_complaint():
+    data = request.json
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+        
+    # Provide defaults for missing fields from Pranav's map
+    payload = {
+        "description": data.get("description", ""),
+        "category": data.get("category", "General"),
+        "latitude": data.get("latitude"),
+        "longitude": data.get("longitude"),
+        "image_url": data.get("image_url"),
+        "status": "pending",
+        "upvote_count": 0,
+        "jurisdiction": data.get("jurisdiction", "Mumbai North") # Default for hackathon
+    }
+    
+    url = f"{get_supabase_url()}/rest/v1/complaints"
+    headers = get_supabase_headers()
+    headers["Prefer"] = "return=representation"
+    
+    try:
+        resp = requests.post(url, headers=headers, json=payload)
+        if resp.status_code not in [200, 201, 204]:
+            return jsonify({"error": f"Failed to insert: {resp.text}"}), 400
+            
+        complaint = resp.json()[0] if isinstance(resp.json(), list) else resp.json()
+        
+        # Trigger Assignment Engine automatically!
+        assign_result = assign_complaint_authority(complaint)
+        print(f"Auto-assignment result: {assign_result}")
+        
+        # Return the complaint (Frontend expects this format)
+        return jsonify(complaint), 200
+        
+    except Exception as e:
+        print(f"Error creating complaint: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @complaints_api.route("/<complaint_id>/status", methods=["POST"])
 def update_status(complaint_id):
     data = request.json
@@ -60,7 +101,7 @@ def update_status(complaint_id):
         if new_status == "in_progress":
             create_notification(
                 title="Complaint In Progress",
-                body=f"Your complaint '{complaint['title']}' is now in progress.",
+                body=f"Your complaint '{complaint.get('category', 'Complaint')}' is now in progress.",
                 citizen_id=citizen["id"] if citizen else None
             )
             if citizen:
@@ -69,7 +110,7 @@ def update_status(complaint_id):
         elif new_status == "resolved":
             create_notification(
                 title="Complaint Resolved",
-                body=f"Your complaint '{complaint['title']}' has been resolved.",
+                body=f"Your complaint '{complaint.get('category', 'Complaint')}' has been resolved.",
                 citizen_id=citizen["id"] if citizen else None
             )
             if citizen:
@@ -101,7 +142,7 @@ def upvote_complaint(complaint_id):
                 send_threshold_citizen_email(citizen, updated_complaint)
                 create_notification(
                     title="Community Threshold Reached",
-                    body=f"Your complaint '{updated_complaint['title']}' has been escalated.",
+                    body=f"Your complaint '{updated_complaint.get('category', 'Complaint')}' has been escalated.",
                     citizen_id=citizen["id"]
                 )
             
@@ -110,7 +151,7 @@ def upvote_complaint(complaint_id):
                 send_threshold_authority_email(authority, updated_complaint)
                 create_notification(
                     title="Critical Threshold Escalation",
-                    body=f"Complaint '{updated_complaint['title']}' reached the community threshold.",
+                    body=f"Complaint '{updated_complaint.get('category', 'Complaint')}' reached the community threshold.",
                     authority_id=authority["id"]
                 )
                     

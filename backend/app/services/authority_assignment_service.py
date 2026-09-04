@@ -3,20 +3,18 @@ from app.services.notification_service import get_supabase_headers, get_supabase
 
 # Exact category -> department mapping as requested
 POLICE_CATEGORIES = [
-    "Theft",
-    "Assault",
-    "Suspicious Activity",
-    "Traffic"
+    "Theft", "Assault", "Suspicious Activity", "Traffic", 
+    "Women Safety", "Illegal Parking", "Robbery", "Harassment", 
+    "Eve-Teasing", "Violence", "Child Safety", "Stray Animal"
 ]
 
 BMC_CATEGORIES = [
-    "Road Damage",
-    "Garbage/Waste",
-    "Streetlight",
-    "Drainage",
-    "Water Supply",
-    "Encroachment",
-    "Public Sanitation"
+    "Road Damage", "Garbage", "Waste", "Streetlight", "Street Lights",
+    "Drainage", "Water Supply", "Encroachment", "Public Sanitation",
+    "Potholes", "Water Logging", "Prolonged Road Work",
+    "Public Washroom", "Green Area", "Landscape", "Plants",
+    "Pest", "Insect", "Vegetation", "Tree", "Manholes", "Footpath",
+    "Fire Hazard", "Electrical Hazard", "Exposed Wires"
 ]
 
 def determine_department(category):
@@ -41,9 +39,16 @@ def fetch_oldest_matching_authority(department, jurisdiction):
     if not department or not jurisdiction:
         return None
         
-    url = f"{get_supabase_url()}/rest/v1/authorities?department=ilike.%{department}%&jurisdiction=eq.{jurisdiction}&order=created_at.asc&limit=1&select=*"
+    url = f"{get_supabase_url()}/rest/v1/authorities"
+    params = {
+        "department": f"eq.{department}",
+        "jurisdiction": f"eq.{jurisdiction}",
+        "order": "created_at.asc",
+        "limit": 1,
+        "select": "*"
+    }
     try:
-        resp = requests.get(url, headers=get_supabase_headers())
+        resp = requests.get(url, headers=get_supabase_headers(), params=params)
         if resp.status_code == 200 and len(resp.json()) > 0:
             return resp.json()[0]
     except Exception as e:

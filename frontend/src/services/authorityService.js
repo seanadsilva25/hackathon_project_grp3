@@ -7,17 +7,29 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
  */
 export async function getAuthorityProfile() {
   try {
+    const params = new URLSearchParams(window.location.search);
+    const dept = params.get('dept');
+
+    const mockAuthority = dept === 'police' ? {
+      id: "11111111-2222-3333-4444-555555555555",
+      name: "Simulated Police Officer",
+      department: "Police",
+      jurisdiction: "Mumbai North",
+      role: "authority",
+      phone: "+91 100"
+    } : {
+      id: "e4f8d9b1-7a6c-4b5d-9e3f-1a2b3c4d5e6f",
+      name: "Simulated BMC Official",
+      department: "BMC",
+      jurisdiction: "Mumbai North",
+      role: "authority",
+      phone: "+91 9876543210"
+    };
+
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError || !authData?.user) {
-      console.log("No authenticated user, using mock authority for demo");
-      return {
-        id: "mock-authority-123",
-        name: "Demo Police Chief",
-        department: "Police Command",
-        jurisdiction: "Mumbai North",
-        role: "authority",
-        phone: "+91 9876543210"
-      };
+      console.log(`No authenticated user, using ${dept === 'police' ? 'Police' : 'BMC'} mock authority for demo`);
+      return mockAuthority;
     }
 
     const { data: profile, error: profileError } = await supabase
@@ -27,25 +39,18 @@ export async function getAuthorityProfile() {
       .single();
 
     if (profileError || !profile) {
-      console.log("Profile not found in DB, using mock authority for demo");
-      return {
-        id: authData.user.id,
-        name: "Demo BMC Official",
-        department: "BMC Civic Operations",
-        jurisdiction: "Mumbai South",
-        role: "authority",
-        phone: "+91 9876543210"
-      };
+      console.log(`Profile not found in DB, using ${dept === 'police' ? 'Police' : 'BMC'} mock authority for demo`);
+      return mockAuthority;
     }
 
     return profile;
   } catch (err) {
     console.error("Error fetching authority profile:", err);
     return {
-      id: "error-mock",
-      name: "Demo Official (Offline)",
-      department: "Police",
-      jurisdiction: "Local",
+      id: "e4f8d9b1-7a6c-4b5d-9e3f-1a2b3c4d5e6f",
+      name: "Simulated BMC Official (Offline)",
+      department: "BMC",
+      jurisdiction: "Mumbai North",
       role: "authority"
     };
   }
@@ -59,11 +64,8 @@ export async function getComplaints(authority) {
     let query = supabase.from('complaints').select('*').order('created_at', { ascending: false });
 
     // Filter by assigned authority to ensure strict isolation
-    if (authority?.id && authority.id !== "mock-authority-123") {
+    if (authority?.id) {
       query = query.eq('assigned_authority_id', authority.id);
-    } else if (authority?.id === "mock-authority-123") {
-      // Force empty query to trigger mock data fallback below
-      query = query.eq('id', 'force-empty-mock-query');
     }
 
     const { data, error } = await query;

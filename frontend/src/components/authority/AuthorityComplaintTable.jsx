@@ -35,7 +35,7 @@ export default function AuthorityComplaintTable({ complaints, onRowClick }) {
               </div>
               <div className="text-xs text-unisafe-dark-midnight-blue/70 space-y-1 mb-3">
                 <p><strong>Category:</strong> {comp.category || 'General'}</p>
-                <p className="truncate"><strong>Location:</strong> {comp.address || 'Unknown'}</p>
+                <p className="truncate"><strong>Location:</strong> {comp.address || (comp.latitude && comp.longitude ? `${comp.latitude.toFixed(4)}, ${comp.longitude.toFixed(4)}` : 'Unknown')}</p>
                 <div className="flex items-center gap-1 font-medium text-unisafe-teal">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" /></svg>
                   {comp.upvote_count || 0} Upvotes
@@ -82,8 +82,8 @@ export default function AuthorityComplaintTable({ complaints, onRowClick }) {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-unisafe-dark-midnight-blue/70">{comp.category || 'General'}</td>
-                  <td className="px-6 py-4 text-unisafe-dark-midnight-blue/70 max-w-[200px] truncate" title={comp.address}>
-                    {comp.address || 'Location unknown'}
+                  <td className="px-6 py-4 text-unisafe-dark-midnight-blue/70 max-w-[200px] truncate" title={comp.address || (comp.latitude && comp.longitude ? `${comp.latitude}, ${comp.longitude}` : '')}>
+                    {comp.address || (comp.latitude && comp.longitude ? `${comp.latitude.toFixed(4)}, ${comp.longitude.toFixed(4)}` : 'Location unknown')}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-sm border ${statusColors[comp.status] || statusColors.pending}`}>

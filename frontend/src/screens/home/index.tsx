@@ -141,6 +141,17 @@ export function Hero2({
                                             <ChevronDown className="w-3.5 h-3.5 opacity-50 stroke-[2.5] transition-transform duration-200 group-hover:rotate-180" />
                                         )}
                                     </a>
+                                    {link.hasDropdown && link.dropdownItems && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50">
+                                            <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-2 min-w-[180px] flex flex-col gap-1">
+                                                {link.dropdownItems.map((item) => (
+                                                    <a key={item.label} href={item.href} className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap text-center">
+                                                        {item.label}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Active/Hover Indicator Dot */}
                                     {(hoveredLink === link.label || (!hoveredLink && activeLink === link.label)) && (
                                         <motion.span

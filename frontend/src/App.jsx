@@ -90,11 +90,29 @@ function Home() {
             </div>
             <span className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all text-sm font-bold">→</span>
           </Link>
+
+          <Link
+            to="/authority"
+            className="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-purple-400 hover:shadow-md hover:shadow-purple-500/5 transition-all text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                🛡️
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 group-hover:text-purple-600 transition-colors">Authority Dashboard</h3>
+                <p className="text-xs text-slate-500">Official management interface</p>
+              </div>
+            </div>
+            <span className="text-slate-400 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all text-sm font-bold">→</span>
+          </Link>
         </div>
       </div>
     </div>
   );
 }
+
+import AuthorityDashboard from "./pages/AuthorityDashboard";
 
 export default function App() {
   return (
@@ -110,6 +128,7 @@ export default function App() {
         <Route path="/map" element={<InteractiveMap />} />
         <Route path="/verify" element={<VerificationHub />} />
         <Route path="/verify/:id" element={<ResolutionVerification />} />
+        <Route path="/authority" element={<AuthorityDashboard />} />
       </Routes>
     </BrowserRouter>
   );

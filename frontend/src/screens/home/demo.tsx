@@ -5,6 +5,15 @@ export default function Hero2Demo() {
     { label: "Home", href: "/", active: true },
     { label: "Kanban", href: "/kanban" },
     { label: "Map", href: "/map" },
+    { 
+      label: "Authority Dashboard", 
+      href: "/authority",
+      hasDropdown: true,
+      dropdownItems: [
+        { label: "Police Dashboard", href: "/authority?dept=police" },
+        { label: "BMC Dashboard", href: "/authority?dept=bmc" }
+      ]
+    },
     { label: "Pricing", href: "#" },
     { label: "About", href: "#" },
     { label: "FAQs", href: "#" },
