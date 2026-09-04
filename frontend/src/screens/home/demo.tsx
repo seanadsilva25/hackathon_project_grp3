@@ -7,6 +7,7 @@ export default function Hero2Demo() {
     { label: "Home", href: "/", active: true },
     { label: "Kanban", href: "/kanban" },
     { label: "Map", href: "/map" },
+    { label: "Heatmap", href: "/heatmap" },
     { 
       label: "Authority Dashboard", 
       href: "/authority",

@@ -6,6 +6,8 @@ import KanbanBoard from "./screens/kanban-board/KanbanBoard";
 import InteractiveMap from "./screens/interactive-map/InteractiveMap";
 import ResolutionVerification from "./screens/verification/ResolutionVerification";
 import VerificationHub from "./screens/verification/VerificationHub";
+import AuthorityDashboard from "./pages/AuthorityDashboard";
+import Heatmap from "./pages/Heatmap";
 
 function Home() {
   const [backendStatus, setBackendStatus] = useState("Checking...");
@@ -90,6 +92,22 @@ function Home() {
             </div>
             <span className="text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all text-sm font-bold">→</span>
           </Link>
+          
+          <Link
+            to="/heatmap"
+            className="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-200/80 bg-white hover:border-red-400 hover:shadow-md hover:shadow-red-500/5 transition-all text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                🔥
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 group-hover:text-red-600 transition-colors">Heatmap Dashboard</h3>
+                <p className="text-xs text-slate-500">Civic Risk Heatmap</p>
+              </div>
+            </div>
+            <span className="text-slate-400 group-hover:text-red-600 group-hover:translate-x-0.5 transition-all text-sm font-bold">→</span>
+          </Link>
 
           <Link
             to="/authority"
@@ -112,7 +130,6 @@ function Home() {
   );
 }
 
-import AuthorityDashboard from "./pages/AuthorityDashboard";
 
 export default function App() {
   return (
@@ -126,6 +143,7 @@ export default function App() {
         <Route path="/signup" element={<Auth9Demo />} />
         <Route path="/kanban" element={<KanbanBoard />} />
         <Route path="/map" element={<InteractiveMap />} />
+        <Route path="/heatmap" element={<Heatmap />} />
         <Route path="/verify" element={<VerificationHub />} />
         <Route path="/verify/:id" element={<ResolutionVerification />} />
         <Route path="/authority" element={<AuthorityDashboard />} />

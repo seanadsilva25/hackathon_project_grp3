@@ -41,3 +41,26 @@
 .font-serif {
   font-family: Georgia, Cambria, "Times New Roman", Times, serif;
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  padding: 8px;
+}
+.custom-popup .leaflet-popup-content {
+  margin: 8px;
+}
+.custom-popup .leaflet-popup-tip {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
