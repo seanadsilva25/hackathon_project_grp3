@@ -1,5 +1,7 @@
 import { Hero2 } from "./index";
 
+import CitizenNotificationBell from "../../components/citizen/CitizenNotificationBell";
+
 export default function Hero2Demo() {
   const customNavLinks = [
     { label: "Home", href: "/", active: true },
@@ -47,6 +49,7 @@ export default function Hero2Demo() {
         socialLinks={customSocialLinks}
         headerActions={
           <div className="flex items-center gap-4">
+            <CitizenNotificationBell />
             <div className="flex items-center gap-2 border-r border-gray-300 pr-4">
               <span className="text-xs font-semibold uppercase tracking-wider text-unisafe-midnight-blue/50">Citizen</span>
               <a href="/auth?role=citizen&mode=login" className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-teal transition-colors">
