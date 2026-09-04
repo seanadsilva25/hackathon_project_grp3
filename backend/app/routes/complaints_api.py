@@ -68,6 +68,13 @@ def create_complaint():
         assign_result = assign_complaint_authority(complaint)
         print(f"Auto-assignment result: {assign_result}")
         
+        # Notify citizen
+        create_notification(
+            title="Complaint Submitted",
+            body=f"Your complaint '{complaint.get('category', 'Complaint')}' has been successfully submitted.",
+            citizen_id=complaint.get("citizen_id")
+        )
+        
         # Return the complaint (Frontend expects this format)
         return jsonify(complaint), 200
         

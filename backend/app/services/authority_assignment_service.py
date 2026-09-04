@@ -108,6 +108,15 @@ def assign_complaint_authority(complaint):
         authority_id=authority_id
     )
     
+    # Notify if it's a high risk category
+    high_risk_categories = ["Assault", "Violence", "Robbery", "Fire Hazard", "Electrical Hazard", "Exposed Wires"]
+    if any(h.lower() in (category or '').lower() for h in high_risk_categories):
+        create_notification(
+            title="Critical/High-Risk Complaint",
+            body=f"URGENT: A high-risk complaint '{complaint.get('title', 'Complaint')}' requires immediate attention.",
+            authority_id=authority_id
+        )
+    
     return {
         "assigned": True,
         "department": department,
