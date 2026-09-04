@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from '../../services/supabase';
@@ -298,6 +298,32 @@ const InteractiveMap = () => {
     }
   };
 
+  const [upvotedReports, setUpvotedReports] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('upvotedReports') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const handleUpvote = async (reportId) => {
+    if (upvotedReports.includes(reportId)) return;
+    
+    // Optimistic update
+    setUpvotedReports(prev => {
+      const next = [...prev, reportId];
+      localStorage.setItem('upvotedReports', JSON.stringify(next));
+      return next;
+    });
+    setReports(prev => prev.map(r => r.id === reportId ? { ...r, upvote_count: (r.upvote_count || 0) + 1 } : r));
+
+    try {
+      await fetch(`/api/complaints/${reportId}/upvote`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to upvote', err);
+    }
+  };
+
   return (
     <div className="relative w-full h-screen bg-slate-50 overflow-hidden text-slate-800 font-sans select-none">
       <style dangerouslySetInnerHTML={{__html: `
@@ -325,7 +351,54 @@ const InteractiveMap = () => {
           step={step} pinLocation={pinLocation} setPinLocation={setPinLocation} setMapInstance={setMapInstance} 
           draggingCat={draggingCat} setDraggingCat={setDraggingCat} setActiveCategory={setActiveCategory} setStep={setStep}
         />
-        {reports.map((report, idx) => <Marker key={idx} position={report.location} icon={getTeardropIcon(report.category)} />)}
+        {reports.map((report, idx) => (
+          <Marker key={report.id || idx} position={report.location} icon={getTeardropIcon(report.category)}>
+            <Popup className="custom-popup" closeButton={false}>
+              <div className="p-1 min-w-[180px]">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-slate-800 text-[14px]">{report.category}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    report.status === 'resolved' ? 'bg-emerald-100 text-emerald-700' :
+                    report.status === 'in_progress' ? 'bg-amber-100 text-amber-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {report.status || 'Pending'}
+                  </span>
+                </div>
+                {report.description && (
+                  <p className="text-slate-600 text-[12px] mb-3 line-clamp-2 leading-relaxed">
+                    {report.description}
+                  </p>
+                )}
+                
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-1">
+                  <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Mumbai
+                  </div>
+                  
+                  {report.id && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUpvote(report.id);
+                      }}
+                      disabled={upvotedReports.includes(report.id)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-[12px] font-bold ${
+                        upvotedReports.includes(report.id) 
+                          ? 'bg-rose-50 text-rose-500 cursor-default' 
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-500 active:scale-95 cursor-pointer shadow-sm'
+                      }`}
+                    >
+                      <svg className={`w-4 h-4 ${upvotedReports.includes(report.id) ? 'fill-current' : 'fill-none'}`} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                      {report.upvote_count || 0}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
       
       {draggingCat && (
@@ -526,7 +599,7 @@ const InteractiveMap = () => {
               ) : (
                 <>
                   <svg className="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  Take a Photo (Optional)
+                  Click Live Photo (Optional)
                 </>
               )}
               <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setPhoto(e.target.files[0])} />

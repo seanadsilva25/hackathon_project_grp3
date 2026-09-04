@@ -27,6 +27,7 @@ export default function Hero2Demo() {
   const customNavLinks = [
     { label: "Home", href: "/", active: true },
     { label: "Map", href: "/map" },
+    { label: "Heatmap", href: "/heatmap" },
   ];
 
   if (isAuthority) {

@@ -84,7 +84,7 @@ export default function ResolutionVerification() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         
         <div className="p-6 border-b border-gray-100 bg-gray-800 text-white">
-          <h2A className="text-2xl font-bold">Resolution Verification</h2A>
+          <h2 className="text-2xl font-bold">Resolution Verification</h2>
           <p className="opacity-80 text-sm mt-1">Please confirm if this issue is fixed.</p>
         </div>
 
