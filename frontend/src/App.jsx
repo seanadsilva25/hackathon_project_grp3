@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import { supabase } from "./services/supabase";
+
 import Auth9Demo from "./screens/signup-login/demo";
 import Hero2Demo from "./screens/home/demo";
 import KanbanBoard from "./screens/kanban-board/KanbanBoard";
@@ -7,7 +9,7 @@ import InteractiveMap from "./screens/interactive-map/InteractiveMap";
 import ResolutionVerification from "./screens/verification/ResolutionVerification";
 import VerificationHub from "./screens/verification/VerificationHub";
 
-function Home() {
+function Home({ user }) {
   const [backendStatus, setBackendStatus] = useState("Checking...");
 
   useEffect(() => {
@@ -21,9 +23,27 @@ function Home() {
       });
   }, []);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-50 to-slate-100/60 font-sans">
       <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 text-center">
+        
+        {/* User Status Bar */}
+        {user && (
+          <div className="mb-6 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between">
+            <div className="text-left">
+              <p className="text-xs text-blue-500 font-semibold uppercase tracking-wider">Logged In As</p>
+              <p className="text-sm font-bold text-blue-900">{user.user_metadata?.role_type || 'User'}</p>
+            </div>
+            <button onClick={handleLogout} className="text-xs bg-white text-slate-600 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm hover:bg-slate-50">
+              Sign Out
+            </button>
+          </div>
+        )}
+
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-xs font-semibold text-blue-600 mb-4">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
           Group 3 Workspace
@@ -81,7 +101,7 @@ function Home() {
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                📍
+                🗺️
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">Interactive Map</h3>
@@ -97,15 +117,89 @@ function Home() {
 }
 
 export default function App() {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const checkAndApplyPendingRole = async (currentSession) => {
+    if (!currentSession?.user) return;
+
+    const pendingRole = localStorage.getItem('pending_auth_role');
+    
+    // Only update if there's pending metadata to apply
+    if (pendingRole) {
+      const updates = {
+        role_type: pendingRole
+      };
+
+      if (pendingRole === 'authority') {
+        updates.department = localStorage.getItem('pending_auth_dept');
+        updates.jurisdiction = localStorage.getItem('pending_auth_jurisdiction');
+        updates.job_role = localStorage.getItem('pending_auth_job');
+      }
+
+      console.log("Applying pending auth data to user metadata:", updates);
+      
+      const { error } = await supabase.auth.updateUser({
+        data: updates
+      });
+
+      if (!error) {
+        // Clean up local storage once successfully applied
+        localStorage.removeItem('pending_auth_role');
+        localStorage.removeItem('pending_auth_dept');
+        localStorage.removeItem('pending_auth_jurisdiction');
+        localStorage.removeItem('pending_auth_job');
+        console.log("Successfully applied metadata!");
+      } else {
+        console.error("Failed to update user metadata:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 1. Check active session on load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      checkAndApplyPendingRole(session);
+      setLoading(false);
+    });
+
+    // 2. Listen to login/logout events
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      checkAndApplyPendingRole(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-sans">Loading App...</div>;
+  }
+
+  // Define a simple ProtectedRoute component
+  const ProtectedRoute = ({ children }) => {
+    if (!session) {
+      return <Navigate to="/auth" replace />;
+    }
+    return children;
+  };
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Hero2Demo />} />
-        <Route path="/status" element={<Home />} />
+        <Route path="/status" element={<Home user={session?.user} />} />
         <Route path="/home" element={<Hero2Demo />} />
-        <Route path="/auth" element={<Auth9Demo />} />
-        <Route path="/login" element={<Auth9Demo />} />
-        <Route path="/signup" element={<Auth9Demo />} />
+        
+        {/* Auth Routes */}
+        <Route path="/auth" element={session ? <Navigate to="/status" replace /> : <Auth9Demo />} />
+        <Route path="/login" element={session ? <Navigate to="/status" replace /> : <Auth9Demo />} />
+        <Route path="/signup" element={session ? <Navigate to="/status" replace /> : <Auth9Demo />} />
+        
+        {/* Protected Routes (You can wrap these when ready, keeping them unprotected for easy testing during hackathon unless you want them protected now) */}
         <Route path="/kanban" element={<KanbanBoard />} />
         <Route path="/map" element={<InteractiveMap />} />
         <Route path="/verify" element={<VerificationHub />} />

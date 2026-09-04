@@ -1,5 +1,7 @@
-import React from "react";
-import { motion, type Variants } from "motion/react";
+import React, { useState } from "react";
+import { motion, type Variants, AnimatePresence } from "motion/react";
+import { User, ShieldCheck, ArrowLeft, Building2, MapPin, Briefcase } from "lucide-react";
+import { supabase } from "../../services/supabase";
 
 // Arrow Icon matching Hugeicons ArrowLeft01Icon
 const ArrowLeft01Icon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -54,7 +56,16 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+type AccountType = "citizen" | "authority" | null;
+
 export default function Auth9() {
+  const [accountType, setAccountType] = useState<AccountType>(null);
+  
+  // Authority Form State
+  const [department, setDepartment] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("");
+  const [role, setRole] = useState("");
+
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -64,6 +75,7 @@ export default function Auth9() {
         delayChildren: 0.2,
       },
     },
+    exit: { opacity: 0, transition: { duration: 0.2 } }
   };
 
   const itemVariants: Variants = {
@@ -77,6 +89,35 @@ export default function Auth9() {
         damping: 24,
       },
     },
+  };
+
+  const handleGoogleLogin = async () => {
+    if (accountType === 'authority') {
+      // Basic validation for authority
+      if (!department || !jurisdiction || !role) {
+        alert("Please fill in all Authority details before proceeding.");
+        return;
+      }
+      localStorage.setItem('pending_auth_role', 'authority');
+      localStorage.setItem('pending_auth_dept', department);
+      localStorage.setItem('pending_auth_jurisdiction', jurisdiction);
+      localStorage.setItem('pending_auth_job', role);
+    } else {
+      localStorage.setItem('pending_auth_role', 'citizen');
+    }
+    
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/status`
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error logging in with Google:', error.message);
+      alert('Error logging in with Google: ' + error.message);
+    }
   };
 
   return (
@@ -121,142 +162,220 @@ export default function Auth9() {
       </div>
 
       {/* Right Form Panel */}
-      <div className="flex w-full flex-1 flex-col items-center justify-center p-6 sm:p-12 lg:p-16 lg:w-1/2 min-h-screen">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="w-full max-w-md md:max-w-lg xl:max-w-xl my-auto"
-        >
-          {/* Titles */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <h2 className="mb-2 text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900">
-              Create your Account
-            </h2>
-            <p className="text-sm md:text-base text-neutral-500">
-              Let&apos;s get started with your 30 days free trial
-            </p>
-          </motion.div>
-
-          {/* Google Login Button */}
-          <motion.div variants={itemVariants} className="mb-6">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white py-3.5 px-4 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 shadow-xs"
-            >
-              <GoogleIcon className="text-xl" />
-              Login with Google
-            </button>
-          </motion.div>
-
-          {/* Divider */}
-          <motion.div
-            variants={itemVariants}
-            className="relative mb-6 flex items-center"
-          >
-            <div className="grow border-t border-neutral-200"></div>
-            <span className="px-4 text-sm text-neutral-400">or</span>
-            <div className="grow border-t border-neutral-200"></div>
-          </motion.div>
-
-          {/* Form */}
-          <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+      <div className="flex w-full flex-1 flex-col items-center justify-center p-6 sm:p-12 lg:p-16 lg:w-1/2 min-h-screen relative overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          {!accountType ? (
+            // ================= STEP 1: ACCOUNT SELECTION =================
             <motion.div
-              variants={itemVariants}
-              className="flex flex-col gap-1.5"
+              key="selection"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="w-full max-w-md md:max-w-lg xl:max-w-xl my-auto"
             >
-              <label
-                htmlFor="name"
-                className="text-sm font-medium text-neutral-900"
-              >
-                Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Enter your name"
-                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all"
-              />
-            </motion.div>
+              <motion.div variants={itemVariants} className="mb-8">
+                <h2 className="mb-2 text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900">
+                  Welcome to Watermelon
+                </h2>
+                <p className="text-sm md:text-base text-neutral-500">
+                  Please select your account type to continue
+                </p>
+              </motion.div>
 
+              <motion.div variants={itemVariants} className="flex flex-col gap-4">
+                <button
+                  onClick={() => setAccountType("citizen")}
+                  className="group relative flex w-full items-center gap-5 rounded-2xl border border-neutral-200 bg-white p-5 text-left transition-all hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.99]"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <User className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900">Citizen</h3>
+                    <p className="mt-1 text-sm text-neutral-500">Report issues, track community progress, and vote on local matters.</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setAccountType("authority")}
+                  className="group relative flex w-full items-center gap-5 rounded-2xl border border-neutral-200 bg-white p-5 text-left transition-all hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.99]"
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-neutral-900">Authority</h3>
+                    <p className="mt-1 text-sm text-neutral-500">Manage tasks, verify reports, and update resolution statuses.</p>
+                  </div>
+                </button>
+              </motion.div>
+            </motion.div>
+          ) : (
+            // ================= STEP 2: AUTH FORM =================
             <motion.div
-              variants={itemVariants}
-              className="flex flex-col gap-1.5"
+              key="auth-form"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="w-full max-w-md md:max-w-lg xl:max-w-xl my-auto"
             >
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-neutral-900"
+              <motion.div variants={itemVariants} className="mb-6">
+                <button 
+                  onClick={() => setAccountType(null)}
+                  className="mb-6 flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back to account type
+                </button>
+
+                <h2 className="mb-2 text-3xl md:text-4xl font-semibold tracking-tight text-neutral-900 capitalize">
+                  {accountType} Portal
+                </h2>
+                <p className="text-sm md:text-base text-neutral-500">
+                  {accountType === "citizen" 
+                    ? "Create your account to start improving your community" 
+                    : "Enter your official credentials to access the dashboard"}
+                </p>
+              </motion.div>
+
+              {/* Authority Specific Fields */}
+              {accountType === "authority" && (
+                <motion.div variants={itemVariants} className="mb-6 rounded-2xl border border-blue-100 bg-blue-50/50 p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" /> Authority Details
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-neutral-700 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-neutral-400" /> Department
+                      </label>
+                      <select 
+                        value={department}
+                        onChange={(e) => setDepartment(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all appearance-none"
+                      >
+                        <option value="" disabled>Select Department</option>
+                        <option value="sanitation">Sanitation & Waste</option>
+                        <option value="traffic">Traffic & Roads</option>
+                        <option value="infrastructure">Infrastructure</option>
+                        <option value="water">Water & Utilities</option>
+                        <option value="police">Police & Safety</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-neutral-700 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-neutral-400" /> Jurisdiction
+                      </label>
+                      <select 
+                        value={jurisdiction}
+                        onChange={(e) => setJurisdiction(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all appearance-none"
+                      >
+                        <option value="" disabled>Select Jurisdiction</option>
+                        <option value="north_zone">North Zone</option>
+                        <option value="south_zone">South Zone</option>
+                        <option value="east_zone">East Zone</option>
+                        <option value="west_zone">West Zone</option>
+                        <option value="city_wide">City-wide</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-medium text-neutral-700 flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-neutral-400" /> Role
+                      </label>
+                      <select 
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all appearance-none"
+                      >
+                        <option value="" disabled>Select Role</option>
+                        <option value="field_worker">Field Worker</option>
+                        <option value="inspector">Inspector</option>
+                        <option value="manager">Manager / Supervisor</option>
+                        <option value="admin">System Admin</option>
+                      </select>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Google Login Button */}
+              <motion.div variants={itemVariants} className="mb-6">
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-200 bg-white py-3.5 px-4 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100 shadow-xs"
+                >
+                  <GoogleIcon className="text-xl" />
+                  Continue with Google
+                </button>
+              </motion.div>
+
+              {/* Divider */}
+              <motion.div
+                variants={itemVariants}
+                className="relative mb-6 flex items-center"
               >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all"
-              />
-            </motion.div>
+                <div className="grow border-t border-neutral-200"></div>
+                <span className="px-4 text-sm text-neutral-400">or use email</span>
+                <div className="grow border-t border-neutral-200"></div>
+              </motion.div>
 
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col gap-1.5"
-            >
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-neutral-900"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all"
-              />
-            </motion.div>
+              {/* Form */}
+              <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+                <motion.div
+                  variants={itemVariants}
+                  className="flex flex-col gap-1.5"
+                >
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-neutral-900"
+                  >
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your official email"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all"
+                  />
+                </motion.div>
 
-            {/* Checkbox */}
-            <motion.div
-              variants={itemVariants}
-              className="mt-1 flex items-start gap-3"
-            >
-              <div className="flex h-5 items-center">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
-                />
-              </div>
-              <label htmlFor="terms" className="text-sm text-neutral-600 cursor-pointer select-none">
-                I agree to all Terms, Privacy Policy and Fees
-              </label>
-            </motion.div>
+                <motion.div
+                  variants={itemVariants}
+                  className="flex flex-col gap-1.5"
+                >
+                  <label
+                    htmlFor="password"
+                    className="text-sm font-medium text-neutral-900"
+                  >
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10 transition-all"
+                  />
+                </motion.div>
 
-            {/* Sign Up Button */}
-            <motion.div variants={itemVariants} className="mt-2">
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-[0.99] cursor-pointer"
-              >
-                Sign Up
-              </button>
+                {/* Sign Up Button */}
+                <motion.div variants={itemVariants} className="mt-2">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl bg-blue-600 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-[0.99] cursor-pointer"
+                  >
+                    Sign In securely
+                  </button>
+                </motion.div>
+              </form>
             </motion.div>
-          </form>
-
-          {/* Footer */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-6 text-sm text-neutral-600 text-center"
-          >
-            Already have an account?{" "}
-            <a
-              href="#"
-              className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Log in
-            </a>
-          </motion.div>
-        </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
