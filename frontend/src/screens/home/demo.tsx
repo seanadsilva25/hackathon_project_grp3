@@ -28,11 +28,7 @@ export default function Hero2Demo() {
     { label: "Home", href: "/", active: true },
     { label: "Map", href: "/map" },
     { label: "Heatmap", href: "/heatmap" },
-  ];
-
-  if (isAuthority) {
-    customNavLinks.push({ label: "Kanban", href: "/kanban", active: false } as any);
-    customNavLinks.push({ 
+    { 
       label: "Authority Dashboard", 
       href: "/authority",
       hasDropdown: true,
@@ -40,7 +36,11 @@ export default function Hero2Demo() {
         { label: "Police Dashboard", href: "/authority?dept=police" },
         { label: "BMC Dashboard", href: "/authority?dept=bmc" }
       ]
-    } as any);
+    } as any
+  ];
+
+  if (isAuthority) {
+    customNavLinks.push({ label: "Kanban", href: "/kanban", active: false } as any);
   }
   
   const customSocialLinks = [
