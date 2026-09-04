@@ -54,15 +54,32 @@ def update_task_status(zone_id):
         
         zone_data = response.data[0] if response.data else {}
         if zone_data:
-            create_notification(
-                title="Complaint status changed",
-                body=f"A complaint in zone {zone_data.get('zone_type')} was moved to {status}."
-            )
-            if status == "done":
-                create_notification(
-                    title="Complaint resolved",
-                    body=f"A complaint in zone {zone_data.get('zone_type')} was resolved."
-                )
+            # Look up a citizen_id from complaints linked to this zone
+            try:
+                dp_res = supabase.table("heatmap_data_points").select("source_id").eq("heatmap_zone_id", zone_id).eq("source_type", "complaint").limit(1).execute()
+                citizen_id = None
+                if dp_res and dp_res.data:
+                    complaint_id = dp_res.data[0].get("source_id")
+                    if complaint_id:
+                        c_res = supabase.table("complaints").select("citizen_id").eq("id", complaint_id).limit(1).execute()
+                        if c_res and c_res.data:
+                            citizen_id = c_res.data[0].get("citizen_id")
+                
+                if citizen_id:
+                    if status == "done":
+                        create_notification(
+                            title="Complaint Resolved",
+                            body=f"A complaint in zone {zone_data.get('zone_type')} has been resolved.",
+                            citizen_id=citizen_id
+                        )
+                    else:
+                        create_notification(
+                            title="Complaint Status Changed",
+                            body=f"A complaint in zone {zone_data.get('zone_type')} was moved to {status}.",
+                            citizen_id=citizen_id
+                        )
+            except Exception as notif_err:
+                print(f"[KANBAN] Notification error (status update still saved): {notif_err}")
 
         return jsonify(zone_data)
     except Exception as e:
@@ -82,15 +99,32 @@ def resolve_task(zone_id):
         
         zone_data = response.data[0] if response.data else {}
         if zone_data:
-            create_notification(
-                title="Authority puts resolution in review",
-                body=f"The issue for {zone_data.get('zone_type')} is in review."
-            )
-            if zone_data.get("severity") == "HIGH":
-                create_notification(
-                    title="Alert: High Risk Issue in Review Near You",
-                    body=f"A high risk {zone_data.get('zone_type')} issue near your location is under review."
-                )
+            # Look up citizen_id from related complaints for notification
+            try:
+                dp_res = supabase.table("heatmap_data_points").select("source_id").eq("heatmap_zone_id", zone_id).eq("source_type", "complaint").limit(1).execute()
+                citizen_id = None
+                if dp_res and dp_res.data:
+                    complaint_id = dp_res.data[0].get("source_id")
+                    if complaint_id:
+                        c_res = supabase.table("complaints").select("citizen_id").eq("id", complaint_id).limit(1).execute()
+                        if c_res and c_res.data:
+                            citizen_id = c_res.data[0].get("citizen_id")
+                
+                if citizen_id:
+                    create_notification(
+                        title="Resolution Under Review",
+                        body=f"The issue for {zone_data.get('zone_type')} is under review. Please verify the resolution.",
+                        citizen_id=citizen_id
+                    )
+                    # Broadcast for high-risk zones
+                    if zone_data.get("severity") == "HIGH":
+                        create_notification(
+                            title="Alert: High Risk Issue in Review",
+                            body=f"A high risk {zone_data.get('zone_type')} issue near your location is under review.",
+                            citizen_id=citizen_id
+                        )
+            except Exception as notif_err:
+                print(f"[KANBAN] Notification error (resolve still saved): {notif_err}")
                 
         return jsonify(zone_data)
     except Exception as e:

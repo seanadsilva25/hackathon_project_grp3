@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify
 from collections import Counter
+import pandas as pd
 from app.supabase_client import get_supabase_client
+from app.heatmap import process_heatmap_pipeline, persist_heatmap_results
 
 heatmap_api = Blueprint("heatmap_api", __name__)
 
@@ -61,4 +63,47 @@ def get_heatmap():
         return jsonify({
             "status": "error",
             "message": "Failed to retrieve heatmap data"
+        }), 500
+
+@heatmap_api.route("/refresh", methods=["POST"])
+def refresh_heatmap():
+    """
+    POST /api/heatmap/refresh
+    Manually triggers the existing ML pipeline to reprocess all complaints and update heatmap zones.
+    Useful for testing and manual recalculation.
+    """
+    try:
+        supabase = get_supabase_client()
+        
+        # Fetch all complaints
+        res = supabase.table("complaints").select("*").execute()
+        complaints_data = res.data if res and hasattr(res, "data") else []
+        
+        if not complaints_data or len(complaints_data) < 3:
+            return jsonify({
+                "status": "success",
+                "message": f"Only {len(complaints_data)} complaints — need >= 3 for DBSCAN clustering",
+                "zones_persisted": 0
+            }), 200
+        
+        # Run existing ML pipeline
+        df = pd.DataFrame(complaints_data)
+        pipeline_result = process_heatmap_pipeline(df)
+        
+        # Persist using existing deterministic logic
+        complaint_ids = [str(c.get("id")) for c in complaints_data if c.get("id")]
+        persist_result = persist_heatmap_results(pipeline_result, complaint_ids)
+        
+        return jsonify({
+            "status": "success",
+            "summary": pipeline_result.get("summary", {}),
+            "zones_persisted": persist_result.get("zones_persisted", 0),
+            "data_points_persisted": persist_result.get("data_points_persisted", 0)
+        }), 200
+        
+    except Exception as e:
+        print(f"Error refreshing heatmap: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to refresh heatmap: {str(e)}"
         }), 500

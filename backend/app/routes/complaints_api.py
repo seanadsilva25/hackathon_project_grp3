@@ -1,4 +1,5 @@
 import requests
+import pandas as pd
 from flask import Blueprint, request, jsonify
 from app.services.notification_service import get_supabase_headers, get_supabase_url, log_complaint_action, create_notification
 from app.services.email_service import (
@@ -8,10 +9,42 @@ from app.services.email_service import (
     send_threshold_authority_email
 )
 from app.services.authority_assignment_service import assign_complaint_authority
+from app.heatmap import process_heatmap_pipeline, persist_heatmap_results
+from app.supabase_client import get_supabase_client
 
 complaints_api = Blueprint("complaints_api", __name__)
 
 COMMUNITY_THRESHOLD = 10
+
+def _trigger_heatmap_pipeline():
+    """
+    Fetches all complaints from Supabase and runs the existing ML heatmap pipeline.
+    This is a secondary operation — failures are logged but do not affect complaint submission.
+    """
+    try:
+        supabase = get_supabase_client()
+        # Fetch all complaints for ML processing
+        res = supabase.table("complaints").select("*").execute()
+        complaints_data = res.data if res and hasattr(res, "data") else []
+        
+        if not complaints_data or len(complaints_data) < 3:
+            print(f"[HEATMAP] Skipping ML pipeline: only {len(complaints_data)} complaints (need >= 3 for DBSCAN)")
+            return
+        
+        # Convert to DataFrame for the existing pipeline
+        df = pd.DataFrame(complaints_data)
+        
+        # Run the existing ML pipeline (DBSCAN clustering + risk scoring)
+        pipeline_result = process_heatmap_pipeline(df)
+        
+        # Persist results using existing deterministic upsert logic
+        complaint_ids = [str(c.get("id")) for c in complaints_data if c.get("id")]
+        persist_result = persist_heatmap_results(pipeline_result, complaint_ids)
+        
+        print(f"[HEATMAP] ML pipeline complete: {persist_result.get('zones_persisted', 0)} zones, "
+              f"{persist_result.get('data_points_persisted', 0)} data points persisted")
+    except Exception as e:
+        print(f"[HEATMAP] ML pipeline error (complaint still saved): {e}")
 
 def _fetch_one(table, column, value):
     url = f"{get_supabase_url()}/rest/v1/{table}?{column}=eq.{value}&select=*"
@@ -74,6 +107,9 @@ def create_complaint():
             body=f"Your complaint '{complaint.get('category', 'Complaint')}' has been successfully submitted.",
             citizen_id=complaint.get("citizen_id")
         )
+        
+        # Trigger ML heatmap pipeline (secondary operation — won't break complaint submission)
+        _trigger_heatmap_pipeline()
         
         # Return the complaint (Frontend expects this format)
         return jsonify(complaint), 200
