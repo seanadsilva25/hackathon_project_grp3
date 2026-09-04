@@ -29,6 +29,7 @@ export interface Hero2Props {
     secondaryCtaLabel?: string;
     secondaryCtaHref?: string;
     socialLinks?: SocialLink[];
+    headerActions?: React.ReactNode;
     signInLabel?: string;
     signInHref?: string;
     className?: string;
@@ -56,7 +57,7 @@ export function Hero2({
     headline = (
         <>
             Automate Smarter,<br />
-            Work <span className="italic font-medium font-serif text-[oklch(0.6378_0.1051_172.72)]">Faster.</span>
+            Work <span className="italic font-medium font-serif text-unisafe-teal">Faster.</span>
         </>
     ),
     description = "Say goodbye to repetitive tasks. Our AI-driven platform streamlines\nyour workflows so your team can focus on what really matters.",
@@ -65,6 +66,7 @@ export function Hero2({
     secondaryCtaLabel = "Book a demo",
     secondaryCtaHref = "#",
     socialLinks = DEFAULT_SOCIAL,
+    headerActions,
     signInLabel = "Sign in",
     signInHref = "/auth",
     className,
@@ -88,17 +90,12 @@ export function Hero2({
     return (
         <section
             className={cn(
-                "relative w-full min-h-screen flex flex-col justify-between overflow-hidden bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900",
+                "relative w-full min-h-screen flex flex-col justify-between overflow-hidden bg-unisafe-smoke-white selection:bg-emerald-100 selection:text-emerald-900",
                 className
             )}
         >
             {/* Background Image */}
-            <div className="absolute inset-0 z-0">
-                <img
-                    src="https://assets.watermelon.sh/hero-2.avif"
-                    alt="Background"
-                    className="absolute inset-0 h-full w-full object-cover object-right md:object-center opacity-100"
-                />
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-unisafe-dark-midnight-blue/5 to-unisafe-teal/10">
             </div>
 
             {/* Header / Navbar */}
@@ -107,9 +104,9 @@ export function Hero2({
                     {/* Brand Logo */}
                     <a href="/" className="flex items-center gap-1 group">
                         {typeof brand === "string" ? (
-                            <span className="relative text-slate-900 font-bold text-xl tracking-tight select-none">
+                            <span className="relative text-unisafe-dark-midnight-blue font-bold text-xl tracking-tight select-none">
                                 {brand}
-                                <span className="absolute top-1 -right-1.5 w-1.5 h-1.5 rounded-full bg-[oklch(0.6378_0.1051_172.72)]"></span>
+                                <span className="absolute top-1 -right-1.5 w-1.5 h-1.5 rounded-full bg-unisafe-teal"></span>
                             </span>
                         ) : (
                             brand
@@ -133,7 +130,7 @@ export function Hero2({
                                         }}
                                         className={cn(
                                             "text-sm font-medium transition-colors flex items-center gap-1.5",
-                                            (hoveredLink === link.label || (!hoveredLink && activeLink === link.label)) ? "text-slate-900 font-semibold" : "text-slate-500 hover:text-slate-900"
+                                            (hoveredLink === link.label || (!hoveredLink && activeLink === link.label)) ? "text-unisafe-dark-midnight-blue font-semibold" : "text-unisafe-midnight-blue/70 hover:text-unisafe-dark-midnight-blue"
                                         )}
                                     >
                                         {link.label}
@@ -141,11 +138,22 @@ export function Hero2({
                                             <ChevronDown className="w-3.5 h-3.5 opacity-50 stroke-[2.5] transition-transform duration-200 group-hover:rotate-180" />
                                         )}
                                     </a>
+                                    {link.hasDropdown && link.dropdownItems && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 z-50">
+                                            <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-2 min-w-[180px] flex flex-col gap-1">
+                                                {link.dropdownItems.map((item) => (
+                                                    <a key={item.label} href={item.href} className="text-sm font-medium text-unisafe-midnight-blue hover:text-unisafe-dark-midnight-blue hover:bg-unisafe-smoke-white px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap text-center">
+                                                        {item.label}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                     {/* Active/Hover Indicator Dot */}
                                     {(hoveredLink === link.label || (!hoveredLink && activeLink === link.label)) && (
                                         <motion.span
                                             layoutId="activeDot"
-                                            className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-[oklch(0.6378_0.1051_172.72)]"
+                                            className="absolute -bottom-1.5 w-1 h-1 rounded-full bg-unisafe-teal"
                                             transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                         />
                                     )}
@@ -154,13 +162,15 @@ export function Hero2({
                         </ul>
                     </nav>
 
-                    {/* Desktop Sign in button */}
-                    <div className="hidden md:block">
-                        <a href={signInHref}>
-                            <Button variant="outline" className="rounded-full px-7 h-10 text-sm font-medium bg-white/60 backdrop-blur-md shadow-[0_0_0_1px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)] hover:text-black hover:bg-white/80 transition-all text-slate-900 border-0 cursor-pointer">
-                                {signInLabel}
-                            </Button>
-                        </a>
+                    {/* Desktop Actions */}
+                    <div className="hidden md:flex items-center gap-4">
+                        {headerActions || (
+                            <a href={signInHref}>
+                                <Button variant="outline" className="rounded-full px-7 h-10 text-sm font-medium bg-white/60 backdrop-blur-md shadow-[0_0_0_1px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.04),0_2px_4px_rgba(0,0,0,0.02)] hover:text-black hover:bg-white/80 transition-all text-unisafe-dark-midnight-blue border-0 cursor-pointer">
+                                    {signInLabel}
+                                </Button>
+                            </a>
+                        )}
                     </div>
 
                     {/* Mobile Menu Toggle */}
@@ -170,9 +180,9 @@ export function Hero2({
                         aria-label="Toggle mobile menu"
                     >
                         <div className="w-5 flex flex-col gap-1.5">
-                            <span className={cn("h-0.5 bg-slate-900 transition-transform", isMobileMenuOpen ? "rotate-45 translate-y-2" : "")} />
-                            <span className={cn("h-0.5 bg-slate-900 transition-opacity", isMobileMenuOpen ? "opacity-0" : "")} />
-                            <span className={cn("h-0.5 bg-slate-900 transition-transform", isMobileMenuOpen ? "-rotate-45 -translate-y-2" : "")} />
+                            <span className={cn("h-0.5 bg-unisafe-dark-midnight-blue transition-transform", isMobileMenuOpen ? "rotate-45 translate-y-2" : "")} />
+                            <span className={cn("h-0.5 bg-unisafe-dark-midnight-blue transition-opacity", isMobileMenuOpen ? "opacity-0" : "")} />
+                            <span className={cn("h-0.5 bg-unisafe-dark-midnight-blue transition-transform", isMobileMenuOpen ? "-rotate-45 -translate-y-2" : "")} />
                         </div>
                     </button>
                 </header>
@@ -199,7 +209,7 @@ export function Hero2({
                                     }}
                                     className={cn(
                                         "text-2xl font-semibold flex items-center gap-2",
-                                        activeLink === link.label ? "text-slate-900" : "text-slate-500"
+                                        activeLink === link.label ? "text-unisafe-dark-midnight-blue" : "text-unisafe-midnight-blue/70"
                                     )}
                                 >
                                     {link.label}
@@ -208,7 +218,7 @@ export function Hero2({
                         </nav>
                         <div className="mt-auto">
                             <a href={signInHref} onClick={() => setIsMobileMenuOpen(false)}>
-                                <Button className="w-full rounded-full bg-[oklch(0.6378_0.1051_172.72)] hover:opacity-90 text-white h-12 text-base cursor-pointer shadow-md">
+                                <Button className="w-full rounded-full bg-unisafe-teal hover:opacity-90 text-white h-12 text-base cursor-pointer shadow-md">
                                     {signInLabel}
                                 </Button>
                             </a>
@@ -227,30 +237,30 @@ export function Hero2({
                 <div className="max-w-2xl lg:max-w-3xl">
                     <motion.h1
                         variants={itemVariants}
-                        className="text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight text-slate-900 leading-[1.08]"
+                        className="text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight text-unisafe-dark-midnight-blue leading-[1.08]"
                     >
                         {headline}
                     </motion.h1>
 
                     <motion.p
                         variants={itemVariants}
-                        className="mt-5 text-base md:text-lg text-slate-600 leading-relaxed max-w-2xl whitespace-pre-line"
+                        className="mt-5 text-base md:text-lg text-unisafe-midnight-blue leading-relaxed max-w-2xl whitespace-pre-line"
                     >
                         {description}
                     </motion.p>
 
                     <motion.div variants={itemVariants} className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                         <a href={primaryCtaHref}>
-                            <Button className="rounded-full px-8 bg-[oklch(0.6378_0.1051_172.72)] hover:brightness-105 text-white h-12 text-sm md:text-base font-medium shadow-[0_0_0_1px_rgba(0,0,0,0.05),inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_16px_rgba(0,0,0,0.1)] border-0 transition-all group cursor-pointer w-full sm:w-auto">
+                            <Button className="rounded-full px-8 bg-unisafe-teal hover:brightness-105 text-white h-12 text-sm md:text-base font-medium shadow-[0_0_0_1px_rgba(0,0,0,0.05),inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_16px_rgba(0,0,0,0.1)] border-0 transition-all group cursor-pointer w-full sm:w-auto">
                                 {primaryCtaLabel}
                                 <ArrowRight className="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1" />
                             </Button>
                         </a>
 
                         <a href={secondaryCtaHref}>
-                            <Button variant="secondary" className="rounded-full px-8 bg-[#eaeff1]/80 hover:bg-[#eaeff1] backdrop-blur-sm shadow-[0_0_0_1px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_4px_rgba(0,0,0,0.02)] text-slate-900 h-12 text-sm md:text-base font-medium border-0 transition-all cursor-pointer w-full sm:w-auto">
+                            <Button variant="secondary" className="rounded-full px-8 bg-[#eaeff1]/80 hover:bg-[#eaeff1] backdrop-blur-sm shadow-[0_0_0_1px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_4px_rgba(0,0,0,0.02)] text-unisafe-dark-midnight-blue h-12 text-sm md:text-base font-medium border-0 transition-all cursor-pointer w-full sm:w-auto">
                                 {secondaryCtaLabel}
-                                <Play className="w-3.5 h-3.5 ml-2 fill-slate-900" />
+                                <Play className="w-3.5 h-3.5 ml-2 fill-unisafe-dark-midnight-blue" />
                             </Button>
                         </a>
                     </motion.div>
@@ -272,7 +282,7 @@ export function Hero2({
                             href={social.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-slate-500 hover:text-slate-900 text-sm md:text-base transition-colors"
+                            className="text-unisafe-midnight-blue/70 hover:text-unisafe-dark-midnight-blue text-sm md:text-base transition-colors"
                         >
                             {social.label}
                         </a>
@@ -280,7 +290,7 @@ export function Hero2({
                 </div>
 
                 {/* Scroll Indicator */}
-                <div className="flex items-center gap-2 text-slate-500 text-sm md:text-base cursor-pointer group w-full md:w-auto justify-start md:justify-end">
+                <div className="flex items-center gap-2 text-unisafe-midnight-blue/70 text-sm md:text-base cursor-pointer group w-full md:w-auto justify-start md:justify-end">
                     <span>Scroll to Discover</span>
                     <motion.span
                         animate={{ y: [0, 4, 0] }}

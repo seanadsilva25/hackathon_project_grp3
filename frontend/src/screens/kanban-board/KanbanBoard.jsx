@@ -213,7 +213,7 @@ export default function KanbanBoard() {
       </div>
       
       {/* Grid Layout: 2x2 on Mobile, 4x1 Flex on Desktop */}
-      <div className="grid grid-cols-2 md:flex md:flex-row gap-3 md:gap-6 overflow-x-hidden md:overflow-x-auto pb-8 flex-1 hide-scroll items-start px-3 md:px-8 max-w-7xl mx-auto w-full justify-center">
+      <div className="grid grid-cols-2 md:flex md:flex-row gap-3 md:gap-6 overflow-x-hidden md:overflow-x-auto pb-8 flex-1 hide-scroll items-start px-3 md:px-8 max-w-7xl mx-auto w-full">
         {COLUMNS.map(col => {
           const columnTasks = tasks.filter(t => t.column === col.id);
           const isHovered = hoveredCol === col.id;

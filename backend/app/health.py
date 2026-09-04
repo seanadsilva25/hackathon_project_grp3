@@ -7,8 +7,8 @@ load_dotenv()
 
 main = Blueprint("main", __name__)
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY")
 
 supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
@@ -31,26 +31,6 @@ def get_complaints():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@main.route("/complaints", methods=["POST"])
-def create_complaint():
-    if not supabase:
-        return jsonify({"error": "Supabase not configured"}), 500
-    try:
-        data = request.json
-        # Format the data according to the database schema
-        complaint = {
-            "latitude": data.get("latitude"),
-            "longitude": data.get("longitude"),
-            "category": data.get("category"),
-            "description": data.get("description"),
-            "image_url": data.get("image_url"),
-            "status": "pending"
-        }
-        response = supabase.table("complaints").insert(complaint).execute()
-        return jsonify(response.data[0] if response.data else {})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @main.route("/kanban/tasks", methods=["GET"])
 def get_kanban_tasks():
     if not supabase:
@@ -61,6 +41,8 @@ def get_kanban_tasks():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+from app.services.notification_service import create_notification
+
 @main.route("/kanban/tasks/<zone_id>/status", methods=["PUT"])
 def update_task_status(zone_id):
     if not supabase:
@@ -69,7 +51,20 @@ def update_task_status(zone_id):
         data = request.json
         status = data.get("status")
         response = supabase.table("heatmap_zones").update({"status": status}).eq("id", zone_id).execute()
-        return jsonify(response.data[0] if response.data else {})
+        
+        zone_data = response.data[0] if response.data else {}
+        if zone_data:
+            create_notification(
+                title="Complaint status changed",
+                body=f"A complaint in zone {zone_data.get('zone_type')} was moved to {status}."
+            )
+            if status == "done":
+                create_notification(
+                    title="Complaint resolved",
+                    body=f"A complaint in zone {zone_data.get('zone_type')} was resolved."
+                )
+
+        return jsonify(zone_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -84,7 +79,20 @@ def resolve_task(zone_id):
             "status": "in-review",
             "authority_image_url": image_url
         }).eq("id", zone_id).execute()
-        return jsonify(response.data[0] if response.data else {})
+        
+        zone_data = response.data[0] if response.data else {}
+        if zone_data:
+            create_notification(
+                title="Authority puts resolution in review",
+                body=f"The issue for {zone_data.get('zone_type')} is in review."
+            )
+            if zone_data.get("severity") == "HIGH":
+                create_notification(
+                    title="Alert: High Risk Issue in Review Near You",
+                    body=f"A high risk {zone_data.get('zone_type')} issue near your location is under review."
+                )
+                
+        return jsonify(zone_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
